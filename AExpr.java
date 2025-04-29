@@ -5,46 +5,22 @@ public class AExpr{
 	
 	public static void main(String []args){
 
-	Op ad = Op.Add;
+	Op ad = Op.ADD;
 
-	Op m = Op.Mul;
+	Op m = Op.MUL;
 
-	Op n = Op.NOT;
-	
+	Op n = Op.OR;
+
 	Op a = Op.AND;
 
-	Expr e = new BiOp(ad,new BiOp(m,new Num(2),new Num(4)),new BiOp(m,new Num(6),new Num(3)));
+	Expr e = new BiOp(ad,new BiOp(m,new Num(3),new Num(4)),new BiOp(m,new Num(6),new Num(3)));
 
-	Expr b = new BiOp(a,new BiOp(n,new Bool(true),new Bool(false)),new BiOp(n,new Bool(false),new Bool(false)));
+	Expr b = new BiOp(a,new BiOp(n,new Bool(true),new Bool(false)),new BiOp(n,new Bool(true),new Bool(false)));
 
 		System.out.println(e.stringify());
 		System.out.println(b.stringify());
 	}
 }
-
-// Nummer 2.1 NEG hinzufügen
-/*sealed interface Expr permits BiOp,Num,Var {
-    default Expr eval(Map<String, Expr> env) {
-        return switch(this) {
-            case Num n -> n;
-===========>>	     case NEG (Expr value) -> new Mul(value,new Num(-1)).eval(env);
-            case Var v -> env.getOrDefault(v.name(), new Num(0));
-            case Add(Expr left, Expr right) ->
-                new Num(((Num)left.eval(env)).value() + ((Num)right.eval(env)).value());
-            case Sub(Expr left, Expr right) ->
-                new Num(((Num)left.eval(env)).value() - ((Num)right.eval(env)).value());
-            case Mul(Expr left, Expr right) ->
-                new Num(((Num)left.eval(env)).value() * ((Num)right.eval(env)).value());
-            case Div(Expr left, Expr right) -> {
-                Num r = (Num)right.eval(env);
-                if (r.value() == 0)
-                    throw new ArithmeticException("Division by zero");
-                yield new Num(((Num)left.eval(env)).value() / r.value());
-            }
-        };
-    }
-}
-*/
 
 sealed interface Expr permits BiOp,Num,Var,Bool{
     default Expr eval(Map<String, Expr> env) {
@@ -61,39 +37,54 @@ sealed interface Expr permits BiOp,Num,Var,Bool{
 
     default String stringify(){
 
+
+	System.out.println(this);
 	    return switch (this){
 		    
-		case BiOp(Op op,Expr left,Expr right) -> {var a = new BiOp(op,left,right);
+		case BiOp(Op op,Expr left,Expr right) -> {BiOp a = new BiOp(op,left,right);
 							  String f = "";
-							  if(a.filter()){f += ""+a.biOp().value()+"";}
+							  if(a.filter()){f += ""+ a.biOp().value()+"";}
 
-
-							  else{f += ""+a.bOP().value()+"";};				  
-							  if(a.op != Op.NEG) {yield stringer()+" "+new Osign(a.op).osign()+" "+stringer()+" = "+ f;} 
-							  else {yield "-"+stringer()+"" ;}}
-		case Num (double n) -> ""+n+"";
-		case Var (String v) -> ""+v+"";
-		case Bool (boolean value) -> ""+value+"";
+							  else{f += ""+ a.bOP().value()+"";};				  
+							  if(op != Op.NEG) { 
+								String leftStr = left.stringer();
+								String rightStr = right.stringer();
+								yield leftStr + " " + new Osign(op).osign() + " " + rightStr + " = " + f;
+								}else{yield "-"+stringer();}}
+		case Num(double n) -> String.valueOf(n);
+		case Var(String v) -> String.valueOf(v);
+ 		case Bool(boolean value) -> String.valueOf(value);
 		default -> "DA IS WAS SCHIEF GELAUFEN";
 	    };
     }
 
-    default String stringer(){
 
-	    return switch (this){
-		    
-		    case BiOp(Op op,Expr left,Expr right) -> {var a = new BiOp(op,left,right);
-								if(a.op != Op.NEG) 
-								{yield "("+stringer()+""+new Osign(a.op).osign()+" "+stringer()+")";} 
-							  	else {yield "-"+stringer()+"" ;}
-								}
-		case Num (double n) -> {yield ""+n+"";}
-		case Var (String v) -> {yield ""+v+" = ";}
- 		case Bool (boolean value) -> {yield ""+value+"";}
-		default -> "DA IS WAS SCHIEF GELAUFEN";
-	    };
+    default String stringer(){ // KI-if statements
+		//
+	System.out.println(this);
 
+	if(this instanceof Num n){
+		return String.valueOf(n.value());
 	}
+
+	if (this instanceof Var v) {
+		return v.name();
+	} 
+	if (this instanceof Bool bool) {
+		return String.valueOf(bool.value());
+	} 
+	if (this instanceof BiOp biOp) {
+		String leftStr = biOp.left().stringer();
+		String rightStr = biOp.right().stringer();
+		String operator = new Osign(biOp.op()).osign();
+
+        return (biOp.op() != Op.NEG) ? "(" + leftStr + " " + operator + " " + rightStr + ")" 
+                                   : "-" + leftStr;
+    }
+    return "DA IS WAS SCHIEF GELAUFEN";   
+
+
+}
 }
 
 record Osign(Op op){
@@ -103,13 +94,13 @@ record Osign(Op op){
 
 			case NEG -> "*(-)";
 
-			case Mul -> "*";
+			case MUL -> "*";
 
-			case Add -> "+";
+			case ADD -> "+";
 
-			case Sub -> "-";
+			case SUB -> "-";
 
-			case Div -> "/";
+			case DIV -> "/";
 
 			case NOT -> "NOT";
 
@@ -124,20 +115,12 @@ record Num(double value) implements Expr {}
 record Var(String name) implements Expr {}
 record Bool(boolean value) implements Expr {}
 
-/*
-record NEG(Expr value) implements Expr {}
-record Add(Expr left, Expr right) implements Expr { }
-record Sub(Expr left, Expr right) implements Expr { }
-record Mul(Expr left, Expr right) implements Expr { }
-record Div(Expr left, Expr right) implements Expr { }
-*/
-
 enum Op{
 	NEG,
-	Add,
-	Sub,
-	Mul,
-	Div,
+	ADD,
+	SUB,
+	MUL,
+	DIV,
 	NOT,
 	AND,
 	OR
@@ -162,14 +145,14 @@ record BiOp(Op op, Expr left, Expr right) implements Expr {
 	return switch(op){
 
 		case NEG -> {if(((Num)this.left.eval(Map.of())).value() != 0.0 || (Num)this.left != null){
-	       			yield (new BiOp(Op.Mul,this.left,new Num(-1)).biOp());}
+	       			yield (new BiOp(Op.MUL,this.left,new Num(-1)).biOp());}
 				throw new IllegalArgumentException("Bei NEG muss reohts NULL stehen");}
 
-		case Add -> new Num(((Num)(this.left.eval(Map.of()))).value() + ((Num)(this.right.eval(Map.of()))).value());
-		case Sub -> new Num(((Num)(this.left.eval(Map.of()))).value() - ((Num)(this.right.eval(Map.of()))).value());
+		case ADD -> new Num(((Num)(this.left.eval(Map.of()))).value() + ((Num)(this.right.eval(Map.of()))).value());
+		case SUB -> new Num(((Num)(this.left.eval(Map.of()))).value() - ((Num)(this.right.eval(Map.of()))).value());
 
-		case Mul -> new Num(((Num)(this.left.eval(Map.of()))).value() * ((Num)(this.right.eval(Map.of()))).value());
-		case Div -> {if(((Num)(this.right.eval(Map.of()))).value() != 0 && (((Num)(this.left.eval(Map.of()))).value() != 0)){
+		case MUL -> new Num(((Num)(this.left.eval(Map.of()))).value() * ((Num)(this.right.eval(Map.of()))).value());
+		case DIV -> {if(((Num)(this.right.eval(Map.of()))).value() != 0 && (((Num)(this.left.eval(Map.of()))).value() != 0)){
 				yield new Num(((Num)(this.left.eval(Map.of()))).value() / ((Num)(this.right.eval(Map.of()))).value());}
 				else{
 				throw new IllegalArgumentException("Divided by zero");}}
@@ -183,41 +166,18 @@ record BiOp(Op op, Expr left, Expr right) implements Expr {
 
 		case AND -> new Bool(((Bool)this.left.eval(Map.of())).value() && ((Bool)this.right.eval(Map.of())).value());
 		case NOT -> new Bool(((Bool)this.left.eval(Map.of())).value() == true);
-		case OR  -> new Bool(((Bool)this.left.eval(Map.of())).value()||((Bool)this.right.eval(Map.of())).value());
+		case OR  -> {boolean b;
+						if((((Bool)this.left.eval(Map.of())).value()) == true)
+						{b=true;}
+						else{
+						if((((Bool)this.right.eval(Map.of())).value()) == true)
+						{b = true;}
+						else
+						{b = false;}}
+						yield new Bool(b);}
 		default -> null;
 	};
 	}
     }
 
-/* void main() {
-    Logger logger = Logger.getLogger("AExpr");
-    // 1 + 2 * 3 ==> 7
-    //Expr expr1 = new BiOp(Op.Mul, new Mul(new Num(2), new Num(3)));
-    //System.out.println(expr1.eval(Map.of())); // 7.0
-}    // 1 + 2 * 3 / 4 ==> 5.5
-  /*  Expr expr2 = new Add(new Num(1), new Div(new Mul(new Num(2), new Num(3)), new Num(4)));
-    System.out.println(expr2.eval(Map.of())); // 5.5
-    // x = 7, 1 + x * 3 = 22
-    Expr expr3 = new Add(new Num(1), new Mul(new Var("x"), new Num(3)));
-    System.out.println(expr3.eval(Map.of("x", new Num(7)))); // 22
-	Expr expr4 = new NEG(new Num(10));
-	System.out.println(expr4.eval(Map.of()));
-}
 
-/*
-% jshell -R-ea
-|  Willkommen bei JShell - Version 24
-|  Geben Sie für eine Einführung Folgendes ein: /help intro
-
-jshell> /o AExpr.java
-
-jshell> main()
-Num[value=7.0]
-Num[value=2.5]
-
-ODER
-
-% java --enable-preview AExpr.java 
-Num[value=7.0]
-Num[value=2.5]
-*/
