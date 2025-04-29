@@ -33,10 +33,16 @@ public class AExpr{
 
 	Expr d = new BiOp(ni,new Var("x"),new BiOp(m,new Var("y"),new Num(10)));
 
-		System.out.println(e.stringify());
-		System.out.println(b.stringify());
-		System.out.println(c.stringify());
-		System.out.println(d.stringify());
+	Expr q = new BiOp(ni,new BiOp(m,new Var("x"),new Num(2)),new BiOp(m,new Var ("W"),new Num(4)));
+
+	Expr t = new BiOp(ad,new BiOp(m,new Num(3),new Num(7)),new BiOp(m,new Num(4),new Num(4)));
+
+		System.out.println(e.stringer());
+		System.out.println(b.stringer());
+		System.out.println(c.stringer());
+		System.out.println(d.stringer());
+		System.out.println(q.stringer());
+		System.out.println(t.stringify());
 	}
 }
 
@@ -48,9 +54,9 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
             case Var v -> v; //**env.getOrDefault(v.value(), new Num(0));
 	    case Bool b -> b;
 	    case BiOp(Op op,Expr left,Expr right) -> {BiOp a = new BiOp(op,left,right); 	 
-		    					     if(a.filter() == 1){yield a.biOp();} // schaut nach ob es sich um ein Bool 
-							     if(a.filter()==0){yield a.bOP();}
-	    							else{yield a.vOp();}}	     	  // oder Num handelt
+		    					     if(a.filter() == 1){yield a.biOp();} // schaut nach ob es sich um ein Num 
+							     if(a.filter()==0){yield a.bOP();}    // ,Bool
+	    							else{yield a.vOp();}}	     	  // oder Var handelt
 	    case Ternary(Bool b,Expr then_,Expr else_) -> {Ternary a = new Ternary(b,then_,else_); 
 	    						  yield a.truth();}		          // gibt die Wahre Expression zurück
     };}
@@ -64,8 +70,8 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
 		case BiOp(Op op,Expr left,Expr right) -> {BiOp a = new BiOp(op,left,right);
 							  String f = "";
 							  if(a.filter() == 1){f += ""+ a.biOp().value()+"";}	// überprüft ob double oder
-													// boolean zurückgegeben
-							  if(a.filter()==0){f += ""+ a.bOP().value()+"";}		// werden muss 
+														// boolean zurückgegeben
+							  if(a.filter()==0){f += ""+ a.bOP().value()+"";}	// werden muss 
 							  	if(op != Op.NEG && op != Op.NIX) { 
 									String leftStr = left.stringer();	// teilt den string nach
 									String rightStr = right.stringer();	// Links und rechts auf
@@ -73,7 +79,7 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
 									rightStr + " = " + f;			// das Operatorzeichen
 								}
 
-							  if(a.filter() == 2){ yield " "+ a.vOp().stringer()+" "+new Osign(op).osign() + " "+ right.stringer()+" ";}
+							  if(a.filter() == 2){ yield " "+ a.vOp().stringer()+" "+new Osign(op).osign() + " "+ right.stringer()+" ";} // für Variablen Zuweisungen
 
 							  else{yield "(-*("+stringer()+"))";}}
 		case Num(double n) -> String.valueOf(n);
@@ -86,7 +92,7 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
     													       // die anderen Expr. 
 													       // arbeiten
 
-    default String stringer(){ // KI-if statements "mit den swicth statements klappte es nicht"
+    default String stringer(){ // KI-if instanceof statements "mit den switch statements klappte es nicht"
 			       
 	System.out.println(this);
 
@@ -109,7 +115,7 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
 		return t.truth().stringer(); 
 	}
 
-        return (biOp.op() != Op.NEG) ? "(" + leftStr + " " + operator + " " + rightStr + ")" // letzte Expr im aufruf
+        return (biOp.op() != Op.NEG) ? leftStr + " " + operator + " " + rightStr // letzte Expr im aufruf
                                    : "(-" + leftStr+")" ;
     }
     return "DA IS WAS SCHIEF GELAUFEN";   // zur Fehlerkorrektur
@@ -214,7 +220,7 @@ record BiOp(Op op, Expr left, Expr right) implements Expr { // Op := Rechen Oper
 				yield new Num(((Num)(this.left.eval(Map.of()))).value() / ((Num)(this.right.eval(Map.of()))).value());}
 				else{
 				throw new IllegalArgumentException("Divided by zero");}}
-		case NIX -> new Num(((Num)this.left.eval(Map.of())).value());
+		case NIX -> new Num(((Num)(this.right.eval(Map.of()))).value());
 		default -> null;
 	};	
 	}
