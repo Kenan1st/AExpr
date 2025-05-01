@@ -37,12 +37,20 @@ public class AExpr{
 
 	Expr t = new BiOp(ad,new BiOp(m,new Num(3),new Num(7)),new BiOp(m,new Num(4),new Num(4)));
 
-		System.out.println(e.stringer());
-		System.out.println(b.stringer());
-		System.out.println(c.stringer());
-		System.out.println(d.stringer());
-		System.out.println(q.stringer());
+	Expr k = new BiOp(m,new BiOp(ne,new Num(4),new Num(0.0)),new Num(3.0));
+
+	Expr AP = new Ternary(new Bool(false),new Ternary(new Bool(true),new Var("schlecht"),new Num(23)),new Ternary(new Bool(false),new Var("x"),new Num(21)));
+
+	Expr r = new BiOp(di,new BiOp(m,new Num(78),new Num(5)),new BiOp(m,new Num(21),new Num(6)));
+		System.out.println(e.stringify());
+		System.out.println(b.stringify());
+		System.out.println(c.stringify());
+		System.out.println(d.stringify());
+		System.out.println(q.stringer()); //!!!
 		System.out.println(t.stringify());
+		System.out.println(k.stringify());
+		System.out.println(AP.stringify());
+		System.out.println(r.stringify());
 	}
 }
 
@@ -51,7 +59,7 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
 
 	    return switch(this) {
             case Num n -> n;
-            case Var v -> v; //**env.getOrDefault(v.value(), new Num(0));
+            case Var v -> v;//env.getOrDefault(v.value(), new Num(0));
 	    case Bool b -> b;
 	    case BiOp(Op op,Expr left,Expr right) -> {BiOp a = new BiOp(op,left,right); 	 
 		    					     if(a.filter() == 1){yield a.biOp();} // schaut nach ob es sich um ein Num 
@@ -63,8 +71,6 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
 
     default String stringify(){
 
-
-	System.out.println(this);
 	    return switch (this){
 		    
 		case BiOp(Op op,Expr left,Expr right) -> {BiOp a = new BiOp(op,left,right);
@@ -79,9 +85,10 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
 									rightStr + " = " + f;			// das Operatorzeichen
 								}
 
-							  if(a.filter() == 2){ yield " "+ a.vOp().stringer()+" "+new Osign(op).osign() + " "+ right.stringer()+" ";} // für Variablen Zuweisungen
+							  if(a.filter() == 2){ yield " "+ a.vOp().stringer()+" "+new Osign(op).osign() + " "+ 
+								  			right.stringer()+" ";} // für Variablen Zuweisungen
 
-							  else{yield "(-*("+stringer()+"))";}}
+							  else{yield "("+stringer()+")" + "="+f;}}
 		case Num(double n) -> String.valueOf(n);
 		case Var(String v) -> String.valueOf(v);
  		case Bool(boolean value) -> String.valueOf(value);
@@ -93,8 +100,6 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
 													       // arbeiten
 
     default String stringer(){ // KI-if instanceof statements "mit den switch statements klappte es nicht"
-			       
-	System.out.println(this);
 
 	if(this instanceof Num n){
 		return String.valueOf(n.value());
@@ -116,7 +121,7 @@ sealed interface Expr permits BiOp,Num,Var,Bool,Ternary {
 	}
 
         return (biOp.op() != Op.NEG) ? leftStr + " " + operator + " " + rightStr // letzte Expr im aufruf
-                                   : "(-" + leftStr+")" ;
+                                   : "(-*" + leftStr+")" ;
     }
     return "DA IS WAS SCHIEF GELAUFEN";   // zur Fehlerkorrektur
 
@@ -196,7 +201,7 @@ record BiOp(Op op, Expr left, Expr right) implements Expr { // Op := Rechen Oper
 	public Var vOp(){
 
 		if(left instanceof Var){
-		return (Var)left.eval(Map.of());}
+		return new Var(((Var)left.eval(Map.of())).value());}
 		else{return new Var("ERROR_BIOP");}
 	
 	}
@@ -208,9 +213,9 @@ record BiOp(Op op, Expr left, Expr right) implements Expr { // Op := Rechen Oper
 
 	return switch(op){  
 
-		case NEG -> {if(((Num)this.left.eval(Map.of())).value() != 0.0 || (Num)this.left != null){
-	       			yield (new BiOp(Op.MUL,this.left,new Num(-1)).biOp());}
-				throw new IllegalArgumentException("Bei NEG muss reohts NULL stehen");}
+		case NEG -> {if(((Num)this.left.eval(Map.of())).value() != 0.0 || ((Num)this.right.eval(Map.of())).value() == 0.0){
+	       			yield new BiOp(Op.MUL,this.left,new Num(-1.0)).biOp();}
+				throw new IllegalArgumentException("Bei NEG muss rechts new Num(0.0) stehen");}
 
 		case ADD -> new Num(((Num)(this.left.eval(Map.of()))).value() + ((Num)(this.right.eval(Map.of()))).value());
 		case SUB -> new Num(((Num)(this.left.eval(Map.of()))).value() - ((Num)(this.right.eval(Map.of()))).value());
@@ -220,7 +225,7 @@ record BiOp(Op op, Expr left, Expr right) implements Expr { // Op := Rechen Oper
 				yield new Num(((Num)(this.left.eval(Map.of()))).value() / ((Num)(this.right.eval(Map.of()))).value());}
 				else{
 				throw new IllegalArgumentException("Divided by zero");}}
-		case NIX -> new Num(((Num)(this.right.eval(Map.of()))).value());
+		case NIX -> new Num(((Num)this.right.eval(Map.of())).value());
 		default -> null;
 	};	
 	}
